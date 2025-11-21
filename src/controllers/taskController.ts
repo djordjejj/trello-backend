@@ -20,36 +20,50 @@ export const getTask = async (req: Request, res: Response) => {
   }
 };
 
+const allowedUsers = ["unassigned", "JD", "AJ", "SS"];
+
 export const createTask = async (req: Request, res: Response) => {
   try {
-    const { title, description, status, assignedUserId } = req.body;
+    const { title, description, status, assignedUser } = req.body;
+
+    if (!allowedUsers.includes(assignedUser)) {
+      return res.status(400).json({
+        message: "Invalid assignedUser. Valid values: unassigned, JD, AJ, SS",
+      });
+    }
 
     const task = await Task.create({
       title,
       description,
       status,
-      assignedUserId,
+      assignedUser,
     });
 
     res.status(201).json(task);
   } catch (error) {
-    res.status(500).json({ error: "Error creating task" });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
 export const updateTask = async (req: Request, res: Response) => {
   try {
-    const updated = await Task.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
+    const { assignedUser } = req.body;
 
-    if (!updated) return res.status(404).json({ error: "Task not found" });
+    if (assignedUser && !allowedUsers.includes(assignedUser)) {
+      return res.status(400).json({
+        message: "Invalid assignedUser. Valid values: unassigned, JD, AJ, SS",
+      });
+    }
 
-    res.json(updated);
-  } catch {
-    res.status(500).json({ error: "Error updating task" });
+    const task = await Task.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
+
+    if (!task) return res.status(404).json({ message: "Task not found" });
+
+    res.json(task);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
   }
 };
 
